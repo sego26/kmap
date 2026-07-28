@@ -654,7 +654,15 @@ window.addEventListener('mouseup', ()=>{
 
 document.getElementById('zoomIn').onclick = ()=>{ scale = Math.min(scale*1.3,12); applyTransform(); };
 document.getElementById('zoomOut').onclick = ()=>{ scale = Math.max(scale/1.3,0.6); applyTransform(); };
-document.getElementById('zoomReset').onclick = ()=>{ scale=1; tx=0; ty=0; applyTransform(); };
+document.getElementById('zoomReset').onclick = ()=>{
+  scale=1; tx=0; ty=0; applyTransform();
+  clearHighlight();
+  document.getElementById('detailCard').classList.remove('show');
+  searchInput.value = '';
+  dropdown.classList.remove('open');
+  currentMatches = [];
+  activeIdx = -1;
+};
 
 // node interactions
 viewport.addEventListener('mousemove', (e)=>{
