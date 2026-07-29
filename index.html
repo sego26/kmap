@@ -401,124 +401,85 @@
 
 <script>
 // ---- Passcode gate ----
-// Change PASSCODE below to whatever you want the shared password to be.
-// Note: this is a simple front-end lock (deters casual visitors / link-guessers),
-// not real security — anyone who views the page source can find the passcode.
-const PASSCODE = "k1716";
+// The passcode itself is never stored in the page. Only:
+//   1) a SHA-256 hash of it (for a fast "wrong passcode" check), and
+//   2) the map data, encrypted with a key derived from the passcode via PBKDF2 + AES-GCM.
+// Without the correct passcode, the browser cannot decrypt the underlying data —
+// it isn't just hidden by the UI, it's genuinely unreadable in the page source.
+// (To change the passcode, re-run the generator script to produce a new ENCRYPTED blob below.)
 
 const lockScreen = document.getElementById('lockScreen');
 const lockInput = document.getElementById('lockInput');
 const lockBtn = document.getElementById('lockBtn');
 const lockError = document.getElementById('lockError');
 
-function tryUnlock(){
-  if(lockInput.value === PASSCODE){
+function b64ToBytes(b64){
+  return Uint8Array.from(atob(b64), c=>c.charCodeAt(0));
+}
+
+async function sha256Hex(str){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function decryptData(passcode){
+  const salt = b64ToBytes(ENCRYPTED.salt);
+  const iv = b64ToBytes(ENCRYPTED.iv);
+  const ciphertext = b64ToBytes(ENCRYPTED.ciphertext);
+
+  const baseKey = await crypto.subtle.importKey(
+    'raw', new TextEncoder().encode(passcode), 'PBKDF2', false, ['deriveKey']
+  );
+  const key = await crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt, iterations: ENCRYPTED.iterations, hash: 'SHA-256' },
+    baseKey,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['decrypt']
+  );
+  const plainBuf = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
+  return JSON.parse(new TextDecoder().decode(plainBuf));
+}
+
+let unlocking = false;
+async function tryUnlock(){
+  if(unlocking) return;
+  const passcode = lockInput.value;
+  unlocking = true;
+  lockBtn.disabled = true;
+
+  try{
+    const hash = await sha256Hex(passcode);
+    if(hash !== ENCRYPTED.passcodeHash){
+      throw new Error('bad passcode');
+    }
+    const data = await decryptData(passcode);
     lockScreen.classList.add('hidden');
-  } else {
+    initApp(data);
+  } catch(err){
     lockError.textContent = 'Incorrect passcode';
     lockInput.value = '';
     lockInput.focus();
+  } finally {
+    unlocking = false;
+    lockBtn.disabled = false;
   }
 }
 lockBtn.addEventListener('click', tryUnlock);
 lockInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') tryUnlock(); });
 lockInput.focus();
 
-const DATA = [
-  {"name": "282 MIN BO", "x": 659, "y": 425, "power": 92372237},
-  {"name": "2inchpunisher", "x": 648, "y": 432, "power": 35333648},
-  {"name": "2اسلام حسين", "x": 638, "y": 432, "power": 49258480},
-  {"name": "3inchpunisher", "x": 655, "y": 429, "power": 82364901},
-  {"name": "Amir", "x": 655, "y": 435, "power": 114549111},
-  {"name": "Anna", "x": 661, "y": 425, "power": 87493004},
-  {"name": "Artanis", "x": 644, "y": 436, "power": 47617809},
-  {"name": "Arthur26", "x": 653, "y": 431, "power": 67208058},
-  {"name": "BAY OSMANLI", "x": 648, "y": 436, "power": 59491422},
-  {"name": "BIGAD", "x": 643, "y": 422, "power": 37546773},
-  {"name": "Bobby brown", "x": 645, "y": 424, "power": 3213613},
-  {"name": "Bravo1", "x": 647, "y": 426, "power": 60635317},
-  {"name": "Buckaroo Banzai", "x": 640, "y": 434, "power": 108982840},
-  {"name": "Catolf Kitler", "x": 659, "y": 427, "power": 77823962},
-  {"name": "Cernunos", "x": 657, "y": 442, "power": 53671589},
-  {"name": "ChaiChen", "x": 651, "y": 431, "power": 65798050},
-  {"name": "Citronauts", "x": 648, "y": 430, "power": 74848243},
-  {"name": "Cooluck", "x": 640, "y": 432, "power": 152116792},
-  {"name": "CYFC", "x": 657, "y": 437, "power": 67341575},
-  {"name": "CzeCzunio", "x": 653, "y": 433, "power": 54519670},
-  {"name": "Dover", "x": 655, "y": 433, "power": 94150729},
-  {"name": "Elšãmtÿ God", "x": 638, "y": 430, "power": 70698172},
-  {"name": "Epsy", "x": 655, "y": 437, "power": 53004709},
-  {"name": "Evahnzelle", "x": 663, "y": 435, "power": 95727590},
-  {"name": "Floflo", "x": 657, "y": 423, "power": 69184021},
-  {"name": "fuempf", "x": 638, "y": 436, "power": 76743021},
-  {"name": "Grey", "x": 665, "y": 431, "power": 35101867},
-  {"name": "Haul", "x": 655, "y": 421, "power": 62021761},
-  {"name": "HEX", "x": 646, "y": 432, "power": 149793698},
-  {"name": "Hexensohn", "x": 659, "y": 437, "power": 34865523},
-  {"name": "Hossam", "x": 653, "y": 429, "power": 87788681},
-  {"name": "HoyaOfAce", "x": 655, "y": 431, "power": 132118058},
-  {"name": "In Limine Sto", "x": 638, "y": 434, "power": 57187667},
-  {"name": "Isla", "x": 649, "y": 438, "power": 44007119},
-  {"name": "king", "x": 662, "y": 442, "power": 53074624},
-  {"name": "King Arnal", "x": 655, "y": 427, "power": 57914766},
-  {"name": "King Kemo", "x": 646, "y": 430, "power": 84803070},
-  {"name": "KingCemó67", "x": 651, "y": 425, "power": 55618154},
-  {"name": "kolongJembatan", "x": 661, "y": 431, "power": 102106085},
-  {"name": "le P4", "x": 642, "y": 436, "power": 80023531},
-  {"name": "Lord Plop", "x": 646, "y": 428, "power": 124761141},
-  {"name": "Lord Virus", "x": 648, "y": 434, "power": 42989657},
-  {"name": "Lord69", "x": 645, "y": 440, "power": 24595220},
-  {"name": "lynn", "x": 657, "y": 435, "power": 107617920},
-  {"name": "Mafia", "x": 663, "y": 433, "power": 65670485},
-  {"name": "majonespzn", "x": 638, "y": 425, "power": 64003969},
-  {"name": "Marcus008", "x": 657, "y": 425, "power": 88316348},
-  {"name": "Metallica", "x": 640, "y": 438, "power": 35020350},
-  {"name": "Miss Symmy", "x": 661, "y": 437, "power": 53960843},
-  {"name": "Misty", "x": 663, "y": 427, "power": 90343153},
-  {"name": "mixxiw", "x": 661, "y": 433, "power": 107869952},
-  {"name": "Morningstar", "x": 636, "y": 424, "power": 53826198},
-  {"name": "Musafir", "x": 653, "y": 425, "power": 57929960},
-  {"name": "MUsLIM", "x": 644, "y": 428, "power": 132462910},
-  {"name": "MUsLIM 2", "x": 644, "y": 426, "power": 57082091},
-  {"name": "MUsLIM 3", "x": 642, "y": 426, "power": 53620172},
-  {"name": "MUsLIM 4", "x": 640, "y": 428, "power": 48696373},
-  {"name": "NWCowboy", "x": 641, "y": 424, "power": 52399484},
-  {"name": "Omar DZ", "x": 638, "y": 428, "power": 72489712},
-  {"name": "Ozz", "x": 663, "y": 429, "power": 105451883},
-  {"name": "Portgas D Ace", "x": 657, "y": 421, "power": 78873196},
-  {"name": "Pusan_man", "x": 661, "y": 435, "power": 94871388},
-  {"name": "pweenciss", "x": 646, "y": 434, "power": 101344458},
-  {"name": "Queen Bee", "x": 653, "y": 435, "power": 2045016},
-  {"name": "Queen Plop", "x": 636, "y": 430, "power": 43923801},
-  {"name": "Raven", "x": 642, "y": 434, "power": 117255204},
-  {"name": "rimon hatter", "x": 650, "y": 440, "power": 27289664},
-  {"name": "sarang", "x": 651, "y": 433, "power": 46648915},
-  {"name": "sego", "x": 657, "y": 429, "power": 187029589},
-  {"name": "seif ,,", "x": 640, "y": 426, "power": 35737162},
-  {"name": "Son of a Plop", "x": 653, "y": 427, "power": 54501174},
-  {"name": "Symmy", "x": 642, "y": 428, "power": 87301070},
-  {"name": "Terdfergusonn", "x": 639, "y": 423, "power": 71744994},
-  {"name": "The Flood", "x": 659, "y": 429, "power": 107646064},
-  {"name": "The strom", "x": 636, "y": 428, "power": 89546325},
-  {"name": "The Weapon", "x": 663, "y": 437, "power": 85062564},
-  {"name": "Tomifaso", "x": 667, "y": 435, "power": 74138019},
-  {"name": "Tql", "x": 644, "y": 434, "power": 105348994},
-  {"name": "Trixie", "x": 640, "y": 430, "power": 198124231},
-  {"name": "UCF Knights", "x": 648, "y": 428, "power": 86728037},
-  {"name": "Unfair", "x": 661, "y": 429, "power": 125679781},
-  {"name": "VANDIA", "x": 647, "y": 424, "power": 62117271},
-  {"name": "Voldemort", "x": 657, "y": 427, "power": 93583315},
-  {"name": "VPooter", "x": 640, "y": 436, "power": 67325997},
-  {"name": "woow", "x": 652, "y": 440, "power": 53135875},
-  {"name": "YedoviL。マヘンドラ", "x": 651, "y": 428, "power": 84672499},
-  {"name": "Zeratul", "x": 659, "y": 435, "power": 150261805},
-  {"name": "اسلام حسين §§", "x": 643, "y": 424, "power": 84509906},
-  {"name": "عبدالرحمن", "x": 650, "y": 416, "power": 49875857},
-  {"name": "هادي", "x": 667, "y": 429, "power": 39307777},
-  {"name": "ياسر ابو عمر", "x": 646, "y": 437, "power": 62450617},
-  {"name": "木子李", "x": 661, "y": 427, "power": 49824390},
-  {"name": "혹시나~~", "x": 663, "y": 431, "power": 97459584}
-];
+const ENCRYPTED = {
+  passcodeHash: "403f0c553dbc73dd3aff4d06228189a8b50ec626525169a9c0f1c818574d5ba0",
+  salt: "E4wVeOQIOhhHGDSdwQKCQQ==",
+  iv: "uBkCFlFiOjn06+4S",
+  iterations: 150000,
+  ciphertext: "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"
+};
+let DATA = [];
+
+function initApp(decryptedData){
+DATA = decryptedData;
 
 // sort for ranking
 const ranked = [...DATA].sort((a,b)=>b.power-a.power);
@@ -772,6 +733,8 @@ document.addEventListener('click', (e)=>{
 });
 
 applyTransform();
+
+} // end initApp
 </script>
 </body>
 </html>
