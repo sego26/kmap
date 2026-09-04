@@ -129,8 +129,8 @@
     position:relative;
     cursor:grab;
     background:
-      radial-gradient(ellipse at 30% 20%, rgba(74,157,143,0.06), transparent 60%),
-      radial-gradient(ellipse at 70% 80%, rgba(179,67,47,0.06), transparent 60%),
+      radial-gradient(ellipse at 30% 20%, rgba(74,157,143,0.07), transparent 60%),
+      radial-gradient(ellipse at 70% 80%, rgba(179,67,47,0.07), transparent 60%),
       var(--bg);
   }
   #mapWrap.dragging{ cursor:grabbing; }
@@ -143,10 +143,10 @@
     font-size:9px;
   }
   .node{ cursor:pointer; transition:opacity .2s; }
-  .node circle.halo{ opacity:0; transition:opacity .2s; }
-  .node:hover circle.halo, .node.highlight circle.halo{ opacity:0.35; }
-  .node.dimmed{ opacity:0.18; }
-  .node.highlight circle.core{ stroke:var(--gold); stroke-width:2; }
+  .node .halo{ opacity:0; transition:opacity .2s; }
+  .node:hover .halo, .node.highlight .halo{ opacity:0.3; }
+  .node.dimmed{ opacity:0.16; }
+  .node.highlight .core{ stroke:var(--gold); stroke-width:1.6; }
   .node-label{
     fill:var(--text);
     font-family:'Inter', sans-serif;
@@ -157,15 +157,21 @@
     transition:opacity .15s;
   }
   .node:hover .node-label, .node.highlight .node-label{ opacity:1; }
-  .sweep{
-    transform-origin:center;
-    animation:sweep 2.2s ease-out 1;
-  }
-  @keyframes sweep{
-    from{ stroke-dashoffset:0; opacity:1;}
-    to{ stroke-dashoffset:0; opacity:0;}
-  }
-  #tooltip{
+  .mnode{ cursor:pointer; transition:opacity .2s; }
+  .mnode .halo{ opacity:0; transition:opacity .2s; }
+  .mnode:hover .halo, .mnode.highlight .halo{ opacity:0.35; }
+  .mnode.dimmed{ opacity:0.16; }
+  .mnode.highlight .core{ stroke:var(--gold); stroke-width:1.4; }
+  .mnode:hover .node-label, .mnode.highlight .node-label{ opacity:1; }
+  #mapWrap.edit-mode .mnode{ cursor:not-allowed; }
+  .bnode{ cursor:pointer; transition:opacity .2s; }
+  .bnode .halo{ opacity:0; transition:opacity .2s; }
+  .bnode:hover .halo, .bnode.highlight .halo{ opacity:0.35; }
+  .bnode.dimmed{ opacity:0.16; }
+  .bnode.highlight .core{ stroke:var(--gold); stroke-width:1.4; }
+  .bnode:hover .node-label, .bnode.highlight .node-label{ opacity:1; }
+  #mapWrap.edit-mode .bnode{ cursor:not-allowed; }
+  #tooltip {
     position:fixed;
     pointer-events:none;
     background:var(--panel-2);
@@ -209,8 +215,8 @@
     color:var(--text-dim);
   }
   .swatch{
-    width:12px; height:12px;
-    border-radius:50%;
+    width:14px; height:8px;
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
     flex-shrink:0;
   }
   .controls{
@@ -222,6 +228,7 @@
   }
   .controls b{ color:var(--text); }
   #detailCard{
+    position:relative;
     margin-top:24px;
     padding:14px;
     background:var(--panel-2);
@@ -230,6 +237,20 @@
     display:none;
   }
   #detailCard.show{ display:block; }
+  #dClose{
+    position:absolute;
+    top:8px;
+    right:8px;
+    width:22px; height:22px;
+    background:transparent;
+    border:none;
+    color:var(--text-dim);
+    font-size:16px;
+    line-height:1;
+    cursor:pointer;
+    border-radius:4px;
+  }
+  #dClose:hover{ color:var(--text); background:rgba(255,255,255,0.06); }
   #detailCard .d-name{
     font-family:'Inter',sans-serif;
     font-weight:600;
@@ -246,6 +267,39 @@
     margin-bottom:4px;
   }
   #detailCard .d-row span:last-child{ color:var(--text); }
+  .power-edit{
+    display:flex;
+    gap:6px;
+    margin-top:12px;
+    padding-top:12px;
+    border-top:1px solid var(--grid-major);
+  }
+  .power-edit input{
+    flex:1;
+    min-width:0;
+    background:var(--bg);
+    border:1px solid var(--grid-major);
+    color:var(--text);
+    padding:7px 8px;
+    border-radius:5px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    outline:none;
+  }
+  .power-edit input:focus{ border-color:var(--gold); }
+  .power-edit button{
+    background:var(--gold);
+    border:none;
+    color:var(--bg);
+    padding:7px 10px;
+    border-radius:5px;
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size:11px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .power-edit button:hover{ opacity:0.9; }
   #zoomCtl{
     position:absolute;
     bottom:20px;
@@ -265,6 +319,22 @@
     cursor:pointer;
   }
   #zoomCtl button:hover{ border-color:var(--gold); color:var(--gold); }
+
+  .hdrBtn{
+    background:var(--panel-2);
+    border:1px solid var(--grid-major);
+    color:var(--text-dim);
+    padding:9px 14px;
+    border-radius:6px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    cursor:pointer;
+    white-space:nowrap;
+    transition:border-color .15s, color .15s, background .15s;
+  }
+  .hdrBtn:hover{ border-color:var(--gold); color:var(--gold); }
+  .hdrBtn.active{ background:var(--gold); border-color:var(--gold); color:var(--bg); }
+  #mapWrap.edit-mode .node{ cursor:move; }
 
   #lockScreen{
     position:fixed;
@@ -363,12 +433,19 @@
       <input id="search" type="text" placeholder="Search by ruler or city name…" autocomplete="off">
       <div class="dropdown" id="dropdown"></div>
     </div>
+    <button id="editToggle" class="hdrBtn">Edit positions</button>
+    <button id="copyPositions" class="hdrBtn">Copy data</button>
     <div class="stats" id="stats"></div>
   </header>
   <div class="main">
     <div id="mapWrap">
       <svg id="svg" viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid meet">
-        <g id="viewport"></g>
+        <g id="viewport">
+          <g id="gridLayer"></g>
+          <g id="miningLayer"></g>
+          <g id="bannerLayer"></g>
+          <g id="nodesLayer"></g>
+        </g>
       </svg>
       <div id="zoomCtl">
         <button id="zoomIn">+</button>
@@ -378,21 +455,30 @@
     </div>
     <aside>
       <h2>Power Tier</h2>
-      <div class="legend-row"><div class="swatch" style="background:#4a9d8f"></div> Under 40M</div>
-      <div class="legend-row"><div class="swatch" style="background:#5b7ba6"></div> 40M – 70M</div>
-      <div class="legend-row"><div class="swatch" style="background:#c9a961"></div> 70M – 110M</div>
-      <div class="legend-row"><div class="swatch" style="background:#b3432f"></div> 110M+</div>
+      <div class="legend-row"><div class="swatch" style="background:#4a9d8f"></div> Under 80M</div>
+      <div class="legend-row"><div class="swatch" style="background:#5b7ba6"></div> 80M – 120M</div>
+      <div class="legend-row"><div class="swatch" style="background:#c9a961"></div> 120M – 200M</div>
+      <div class="legend-row"><div class="swatch" style="background:#b3432f"></div> 200M+</div>
+      <div class="legend-row"><div class="swatch" style="background:#7fcdbd"></div> Mining node (2×2, fixed)</div>
+      <div class="legend-row"><div class="swatch" style="background:#8fa8c9"></div> Banner (1×1, fixed)</div>
       <div class="controls">
         <b>Scroll</b> to zoom<br>
         <b>Drag</b> to pan<br>
         <b>Click</b> a marker for detail<br>
-        <b>Search</b> to locate a ruler
+        <b>Search</b> to locate a ruler<br>
+        <b>Edit positions</b> to drag markers<br>
+        Mining nodes are fixed
       </div>
       <div id="detailCard">
+        <button id="dClose" aria-label="Deselect">×</button>
         <div class="d-name" id="dName"></div>
         <div class="d-row"><span>Coordinates</span><span id="dCoord"></span></div>
-        <div class="d-row"><span>Power</span><span id="dPower"></span></div>
-        <div class="d-row"><span>Rank</span><span id="dRank"></span></div>
+        <div class="d-row" id="dPowerRow"><span id="dPowerLabel">Power</span><span id="dPower"></span></div>
+        <div class="d-row" id="dRankRow"><span>Rank</span><span id="dRank"></span></div>
+        <div class="power-edit" id="powerEdit">
+          <input id="powerInput" type="number" min="1" step="1">
+          <button id="powerSave">Update power</button>
+        </div>
       </div>
     </aside>
   </div>
@@ -401,179 +487,349 @@
 
 <script>
 // ---- Passcode gate ----
-// The passcode itself is never stored in the page. Only:
-//   1) a SHA-256 hash of it (for a fast "wrong passcode" check), and
-//   2) the map data, encrypted with a key derived from the passcode via PBKDF2 + AES-GCM.
-// Without the correct passcode, the browser cannot decrypt the underlying data —
-// it isn't just hidden by the UI, it's genuinely unreadable in the page source.
-// (To change the passcode, re-run the generator script to produce a new ENCRYPTED blob below.)
+const PASSCODE = "wls";
 
 const lockScreen = document.getElementById('lockScreen');
 const lockInput = document.getElementById('lockInput');
 const lockBtn = document.getElementById('lockBtn');
 const lockError = document.getElementById('lockError');
 
-function b64ToBytes(b64){
-  return Uint8Array.from(atob(b64), c=>c.charCodeAt(0));
-}
-
-async function sha256Hex(str){
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
-}
-
-async function decryptData(passcode){
-  const salt = b64ToBytes(ENCRYPTED.salt);
-  const iv = b64ToBytes(ENCRYPTED.iv);
-  const ciphertext = b64ToBytes(ENCRYPTED.ciphertext);
-
-  const baseKey = await crypto.subtle.importKey(
-    'raw', new TextEncoder().encode(passcode), 'PBKDF2', false, ['deriveKey']
-  );
-  const key = await crypto.subtle.deriveKey(
-    { name: 'PBKDF2', salt, iterations: ENCRYPTED.iterations, hash: 'SHA-256' },
-    baseKey,
-    { name: 'AES-GCM', length: 256 },
-    false,
-    ['decrypt']
-  );
-  const plainBuf = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
-  return JSON.parse(new TextDecoder().decode(plainBuf));
-}
-
-let unlocking = false;
-async function tryUnlock(){
-  if(unlocking) return;
-  const passcode = lockInput.value;
-  unlocking = true;
-  lockBtn.disabled = true;
-
-  try{
-    const hash = await sha256Hex(passcode);
-    if(hash !== ENCRYPTED.passcodeHash){
-      throw new Error('bad passcode');
-    }
-    const data = await decryptData(passcode);
+function tryUnlock(){
+  if(lockInput.value === PASSCODE){
     lockScreen.classList.add('hidden');
-    initApp(data);
-  } catch(err){
+  } else {
     lockError.textContent = 'Incorrect passcode';
     lockInput.value = '';
     lockInput.focus();
-  } finally {
-    unlocking = false;
-    lockBtn.disabled = false;
   }
 }
 lockBtn.addEventListener('click', tryUnlock);
 lockInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') tryUnlock(); });
 lockInput.focus();
 
-const ENCRYPTED = {
-  passcodeHash: "403f0c553dbc73dd3aff4d06228189a8b50ec626525169a9c0f1c818574d5ba0",
-  salt: "E4wVeOQIOhhHGDSdwQKCQQ==",
-  iv: "uBkCFlFiOjn06+4S",
-  iterations: 150000,
-  ciphertext: "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"
-};
-let DATA = [];
+const DATA = [
+  {"name": "sego", "x": 657, "y": 429, "power": 255456770},
+  {"name": "FlOOD", "x": 659, "y": 429, "power": 129219365},
+  {"name": "Unfair", "x": 661, "y": 429, "power": 164962113},
+  {"name": "Ozz", "x": 663, "y": 426, "power": 132055283},
+  {"name": "Miss Symmy", "x": 665, "y": 429, "power": 75886761},
+  {"name": "Son of a Plop", "x": 663, "y": 427, "power": 68276866},
+  {"name": "木子李", "x": 661, "y": 427, "power": 69650768},
+  {"name": "Catolf Kitler", "x": 659, "y": 427, "power": 86349436},
+  {"name": "Voldemort", "x": 657, "y": 427, "power": 120106792},
+  {"name": "King Arnal", "x": 655, "y": 427, "power": 66583732},
+  {"name": "FtHsNn", "x": 653, "y": 427, "power": 144431952},
+  {"name": "GokhanVoL666", "x": 655, "y": 429, "power": 210674479},
+  {"name": "Hossam", "x": 653, "y": 429, "power": 113753427},
+  {"name": "Bravo1", "x": 651, "y": 429, "power": 75951115},
+  {"name": "YedoviL", "x": 651, "y": 427, "power": 112343914},
+  {"name": "KingCemo67", "x": 651, "y": 425, "power": 59525277},
+  {"name": "Musafir", "x": 653, "y": 425, "power": 71219456},
+  {"name": "TRAVELER", "x": 657, "y": 425, "power": 86131535},
+  {"name": "282 MIN BO", "x": 659, "y": 425, "power": 114900907},
+  {"name": "Anna", "x": 661, "y": 425, "power": 109605691},
+  {"name": "Floflo", "x": 657, "y": 423, "power": 91599302},
+  {"name": "Portgas D Ace", "x": 657, "y": 421, "power": 105800090},
+  {"name": "Haul", "x": 655, "y": 421, "power": 77291951},
+  {"name": "Grey", "x": 665, "y": 431, "power": 49639575},
+  {"name": "혹시나~~", "x": 663, "y": 431, "power": 121630870},
+  {"name": "kolongJembatan", "x": 661, "y": 431, "power": 135440936},
+  {"name": "mixxiw", "x": 661, "y": 433, "power": 135249255},
+  {"name": "Mafia", "x": 663, "y": 433, "power": 66691762},
+  {"name": "سيد الظلال", "x": 665, "y": 433, "power": 82833398},
+  {"name": "Tomifaso", "x": 667, "y": 435, "power": 83686295},
+  {"name": "sago", "x": 665, "y": 435, "power": 21033629},
+  {"name": "Marcus008", "x": 663, "y": 435, "power": 115077183},
+  {"name": "Pusan_man", "x": 661, "y": 435, "power": 124903834},
+  {"name": "Zeratul", "x": 659, "y": 435, "power": 192637947},
+  {"name": "lynn", "x": 657, "y": 435, "power": 138020920},
+  {"name": "Amir", "x": 655, "y": 435, "power": 153937933},
+  {"name": "THE Sakal &", "x": 653, "y": 435, "power": 121357384},
+  {"name": "Alansari", "x": 655, "y": 433, "power": 218022644},
+  {"name": "CzeCzunio", "x": 653, "y": 433, "power": 56559009},
+  {"name": "sarang", "x": 651, "y": 433, "power": 54633787},
+  {"name": "HoyaOfAce", "x": 655, "y": 431, "power": 172229887},
+  {"name": "Arthur26", "x": 653, "y": 431, "power": 95455900},
+  {"name": "ChaiChen", "x": 651, "y": 431, "power": 86724606},
+  {"name": "CYFC", "x": 655, "y": 437, "power": 104620856},
+  {"name": "Pofi", "x": 657, "y": 437, "power": 123477288},
+  {"name": "Dover", "x": 659, "y": 437, "power": 123338557},
+  {"name": "TIUNA", "x": 661, "y": 437, "power": 166779419},
+  {"name": "The Weapon", "x": 663, "y": 437, "power": 112382118},
+  {"name": "Yassin", "x": 665, "y": 437, "power": 145749923},
+  {"name": "Riya", "x": 660, "y": 439, "power": 115635626},
+  {"name": "Hexensohn", "x": 649, "y": 427, "power": 36969934},
+  {"name": "fuempf", "x": 649, "y": 430, "power": 97995418},
+  {"name": "3inchpunisher", "x": 649, "y": 432, "power": 103510734},
+  {"name": "2inchpunisher", "x": 647, "y": 432, "power": 40374473},
+  {"name": "isla", "x": 649, "y": 438, "power": 53211858},
+  {"name": "Barbatos", "x": 647, "y": 438, "power": 34837368},
+  {"name": "BAY OSMANLI", "x": 648, "y": 436, "power": 76871758},
+  {"name": "ياسر ابو عمر", "x": 646, "y": 436, "power": 63720143},
+  {"name": "mbd", "x": 645, "y": 434, "power": 103347948},
+  {"name": "Citronauts", "x": 647, "y": 430, "power": 103284209},
+  {"name": "UCF Knights", "x": 647, "y": 428, "power": 114052667},
+  {"name": "VANDIA", "x": 647, "y": 424, "power": 74884470},
+  {"name": "Queen Bee", "x": 645, "y": 422, "power": 5173372},
+  {"name": "Max out credit c", "x": 645, "y": 424, "power": 15985619},
+  {"name": "King Kemo", "x": 645, "y": 428, "power": 75103995},
+  {"name": "Raven", "x": 645, "y": 430, "power": 154897702},
+  {"name": "HEX", "x": 645, "y": 432, "power": 188274415},
+  {"name": "Artanis", "x": 643, "y": 436, "power": 54568525},
+  {"name": "Pweenciss", "x": 643, "y": 434, "power": 118852458},
+  {"name": "Muslim", "x": 643, "y": 428, "power": 161148323},
+  {"name": "seif", "x": 642, "y": 426, "power": 43920198},
+  {"name": "NWCowboy", "x": 641, "y": 424, "power": 75753742},
+  {"name": "Terdfergusonn", "x": 639, "y": 423, "power": 98645468},
+  {"name": "اسلام حسين §§", "x": 640, "y": 426, "power": 121988553},
+  {"name": "Symmy", "x": 641, "y": 428, "power": 111364057},
+  {"name": "Lord Plop", "x": 639, "y": 428, "power": 165091832},
+  {"name": "majonespzn", "x": 638, "y": 425, "power": 78703173},
+  {"name": "Morningstar", "x": 636, "y": 424, "power": 64393987},
+  {"name": "Omar DZ", "x": 637, "y": 428, "power": 92444372},
+  {"name": "Muskie", "x": 639, "y": 430, "power": 252627200},
+  {"name": "Cooluck", "x": 639, "y": 432, "power": 200795283},
+  {"name": "اسلام حسين2", "x": 637, "y": 432, "power": 68884500},
+  {"name": "Queen Plop", "x": 637, "y": 430, "power": 54459866},
+  {"name": "Energizer", "x": 635, "y": 430, "power": 102787080},
+  {"name": "woow", "x": 635, "y": 432, "power": 76435389},
+  {"name": "Evahnzelle", "x": 639, "y": 434, "power": 126537219},
+  {"name": "VPooter", "x": 639, "y": 436, "power": 85243939},
+  {"name": "le P4", "x": 641, "y": 436, "power": 111045555},
+  {"name": "Lord69", "x": 642, "y": 438, "power": 39198564},
+  {"name": "Metallica", "x": 640, "y": 438, "power": 39561584}  
+];
 
-function initApp(decryptedData){
-DATA = decryptedData;
+// Mining/resource nodes: terrain features, not owned by a player, no power value,
+// and cannot be dragged in edit mode.
+const MINING_NODES = [
+  {"name": "Mining Node", "x": 651, "y": 435, "resource": "Stone"},
+  {"name": "Mining Node", "x": 658, "y": 440, "resource": "Wood"},
+  {"name": "Mining Node", "x": 664, "y": 439, "resource": "Iron"},  
+  {"name": "Mining Node", "x": 655, "y": 424, "resource": "Bread"},
+  {"name": "Mining Node", "x": 649, "y": 425, "resource": "Wood"},
+  {"name": "Mining Node", "x": 644, "y": 438, "resource": "Stone"},  
+  {"name": "Mining Node", "x": 651, "y": 435, "resource": "Stone"},  
+  {"name": "Mining Node", "x": 645, "y": 418, "resource": "Stone"},  
+  {"name": "Mining Node", "x": 663, "y": 424, "resource": "Wood"}
+];
+
+// Alliance banners: smaller 1x1 footprint markers (vs. the 2x2 footprint of
+// kingdoms and mining nodes), fixed in place like mining nodes.
+const BANNER_NODES = [
+  {"name": "Alliance Banner", "x": 663, "y": 441, "garrisoned": false},
+  {"name": "Alliance Banner", "x": 667, "y": 427, "garrisoned": false},
+  {"name": "Alliance Banner", "x": 660, "y": 424, "garrisoned": false},  
+  {"name": "Alliance Banner", "x": 656, "y": 426, "garrisoned": false},
+  {"name": "Alliance Banner", "x": 655, "y": 426, "garrisoned": false},  
+  {"name": "Alliance Banner", "x": 650, "y": 427, "garrisoned": false},  
+  {"name": "Alliance Banner", "x": 648, "y": 423, "garrisoned": false},  
+  {"name": "Alliance Banner", "x": 642, "y": 423, "garrisoned": false},  
+  {"name": "Alliance Banner", "x": 637, "y": 427, "garrisoned": false},  
+  {"name": "Alliance Banner", "x": 634, "y": 433, "garrisoned": false},  
+  {"name": "Alliance Banner", "x": 644, "y": 440, "garrisoned": false}  
+];
 
 // sort for ranking
 const ranked = [...DATA].sort((a,b)=>b.power-a.power);
-ranked.forEach((d,i)=>{ d.rank = i+1; });
-const rankMap = new Map(DATA.map(d=>[d.name+d.x+d.y, ranked.find(r=>r.name===d.name && r.x===d.x && r.y===d.y).rank]));
+function recomputeRanks(){
+  ranked.sort((a,b)=>b.power-a.power);
+  ranked.forEach((d,i)=>{ d.rank = i+1; });
+}
+recomputeRanks();
 
 const svg = document.getElementById('svg');
 const viewport = document.getElementById('viewport');
 const mapWrap = document.getElementById('mapWrap');
 const tooltip = document.getElementById('tooltip');
 
-const xs = DATA.map(d=>d.x), ys = DATA.map(d=>d.y);
-const minX = Math.min(...xs), maxX = Math.max(...xs);
-const minY = Math.min(...ys), maxY = Math.max(...ys);
-const padX = (maxX-minX)*0.18 || 2;
-const padY = (maxY-minY)*0.18 || 2;
-const worldX0 = minX-padX, worldX1 = maxX+padX;
-const worldY0 = minY-padY, worldY1 = maxY+padY;
-
 const VB_W = 1000, VB_H = 700;
-function worldToScreen(x,y){
-  const sx = (x-worldX0)/(worldX1-worldX0)*VB_W;
-  const sy = VB_H - (y-worldY0)/(worldY1-worldY0)*VB_H; // invert y so higher Y draws near "top"
-  return [sx,sy];
+
+// ---- Isometric projection ----
+// Classic 2:1 diamond grid: each world unit step in x or y moves diagonally on screen,
+// matching the angled tile grid seen in the game's actual view.
+const TILE_W = 2, TILE_H = 1;
+function rawProject(x,y){
+  return { rx: (x-y)*TILE_W/2, ry: -(x+y)*TILE_H/2 };
+}
+let rMinX=Infinity, rMaxX=-Infinity, rMinY=Infinity, rMaxY=-Infinity;
+const ALL_POINTS = [...DATA, ...MINING_NODES, ...BANNER_NODES];
+ALL_POINTS.forEach(d=>{
+  const {rx,ry} = rawProject(d.x,d.y);
+  if(rx<rMinX) rMinX=rx; if(rx>rMaxX) rMaxX=rx;
+  if(ry<rMinY) rMinY=ry; if(ry>rMaxY) rMaxY=ry;
+});
+const padFrac = 0.22;
+let rangeX = (rMaxX-rMinX) || 1, rangeY = (rMaxY-rMinY) || 1;
+rMinX -= rangeX*padFrac; rMaxX += rangeX*padFrac;
+rMinY -= rangeY*padFrac; rMaxY += rangeY*padFrac;
+rangeX = rMaxX-rMinX; rangeY = rMaxY-rMinY;
+const projScale = Math.min(VB_W/rangeX, VB_H/rangeY);
+const usedW = rangeX*projScale, usedH = rangeY*projScale;
+const offX = (VB_W-usedW)/2, offY = (VB_H-usedH)/2;
+
+function project(x,y){
+  const {rx,ry} = rawProject(x,y);
+  return [ (rx-rMinX)*projScale+offX, (ry-rMinY)*projScale+offY ];
 }
 
+// world bounding box (for grid line extents)
+const xs = ALL_POINTS.map(d=>d.x), ys = ALL_POINTS.map(d=>d.y);
+const minX = Math.min(...xs), maxX = Math.max(...xs);
+const minY = Math.min(...ys), maxY = Math.max(...ys);
+const wPadX = (maxX-minX)*0.35 || 3;
+const wPadY = (maxY-minY)*0.35 || 3;
+const worldX0 = minX-wPadX, worldX1 = maxX+wPadX;
+const worldY0 = minY-wPadY, worldY1 = maxY+wPadY;
+
+// Power tier thresholds and their colors — edit these to retune the legend/coloring.
+const TIER_THRESHOLDS = [80000000, 120000000, 200000000];
+const TIER_COLORS = ['#4a9d8f', '#5b7ba6', '#c9a961', '#b3432f'];
+
 function powerColor(p){
-  if(p < 40000000) return '#4a9d8f';
-  if(p < 70000000) return '#5b7ba6';
-  if(p < 110000000) return '#c9a961';
-  return '#b3432f';
+  for(let i=0;i<TIER_THRESHOLDS.length;i++){
+    if(p < TIER_THRESHOLDS[i]) return TIER_COLORS[i];
+  }
+  return TIER_COLORS[TIER_COLORS.length-1];
 }
 function powerRadius(p){
   const r = 4 + Math.sqrt(p)/1400;
   return Math.min(Math.max(r,4), 16);
 }
+function shade(hex, amt){
+  const num = parseInt(hex.slice(1),16);
+  let r=(num>>16)+Math.round(255*amt);
+  let g=((num>>8)&0xff)+Math.round(255*amt);
+  let b=(num&0xff)+Math.round(255*amt);
+  r=Math.min(255,Math.max(0,r)); g=Math.min(255,Math.max(0,g)); b=Math.min(255,Math.max(0,b));
+  return '#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);
+}
 function fmt(n){ return n.toLocaleString('en-US'); }
+function pts(arr){ return arr.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' '); }
+function escapeHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
 
-// build grid
-const gridSpacing = 2; // world units
+// isometric diamond grid
 function buildGrid(){
   let out = '';
-  for(let gx = Math.ceil(worldX0/gridSpacing)*gridSpacing; gx<=worldX1; gx+=gridSpacing){
-    const [sx1,sy1] = worldToScreen(gx, worldY0);
-    const [sx2,sy2] = worldToScreen(gx, worldY1);
-    const major = gx % (gridSpacing*5) === 0;
-    out += `<line class="grid-line${major?' major':''}" x1="${sx1}" y1="${sy1}" x2="${sx2}" y2="${sy2}"></line>`;
-    if(major){
-      out += `<text class="axis-label" x="${sx1+3}" y="${VB_H-6}">${gx}</text>`;
-    }
+  const step = 2;
+  for(let gx = Math.ceil(worldX0/step)*step; gx<=worldX1; gx+=step){
+    const [sx1,sy1] = project(gx, worldY0);
+    const [sx2,sy2] = project(gx, worldY1);
+    const major = gx % (step*5) === 0;
+    out += `<line class="grid-line${major?' major':''}" x1="${sx1.toFixed(1)}" y1="${sy1.toFixed(1)}" x2="${sx2.toFixed(1)}" y2="${sy2.toFixed(1)}"></line>`;
   }
-  for(let gy = Math.ceil(worldY0/gridSpacing)*gridSpacing; gy<=worldY1; gy+=gridSpacing){
-    const [sx1,sy1] = worldToScreen(worldX0, gy);
-    const [sx2,sy2] = worldToScreen(worldX1, gy);
-    const major = gy % (gridSpacing*5) === 0;
-    out += `<line class="grid-line${major?' major':''}" x1="${sx1}" y1="${sy1}" x2="${sx2}" y2="${sy2}"></line>`;
-    if(major){
-      out += `<text class="axis-label" x="4" y="${sy1-3}">${gy}</text>`;
-    }
+  for(let gy = Math.ceil(worldY0/step)*step; gy<=worldY1; gy+=step){
+    const [sx1,sy1] = project(worldX0, gy);
+    const [sx2,sy2] = project(worldX1, gy);
+    const major = gy % (step*5) === 0;
+    out += `<line class="grid-line${major?' major':''}" x1="${sx1.toFixed(1)}" y1="${sy1.toFixed(1)}" x2="${sx2.toFixed(1)}" y2="${sy2.toFixed(1)}"></line>`;
   }
   return out;
 }
 
+// isometric city blocks: ground tile + extruded 3-face block, flag for top tier
 function buildNodes(){
   let out = '';
   DATA.forEach((d,i)=>{
-    const [sx,sy] = worldToScreen(d.x,d.y);
+    const [sx,sy] = project(d.x,d.y);
     const r = powerRadius(d.power);
+    const hw = 3.6 + r*0.55;
+    const hh = hw*0.5;
+    const ext = 3 + r*0.95;
     const c = powerColor(d.power);
-    out += `<g class="node" data-idx="${i}" transform="translate(${sx},${sy})">
-      <circle class="halo" r="${r+9}" fill="${c}"></circle>
-      <circle class="core" r="${r}" fill="${c}" fill-opacity="0.85" stroke="rgba(0,0,0,0.4)" stroke-width="1"></circle>
-      <text class="node-label" x="${r+5}" y="4">${escapeHtml(d.name)}</text>
+    const roofColor = shade(c, 0.16);
+    const leftColor = shade(c, -0.06);
+    const rightColor = shade(c, -0.26);
+    const tileColor = shade(c, -0.05);
+
+    const baseTop=[0,-hh], baseRight=[hw,0], baseBottom=[0,hh], baseLeft=[-hw,0];
+    const roofTop=[0,-ext-hh], roofRight=[hw,-ext], roofBottom=[0,-ext+hh], roofLeft=[-hw,-ext];
+
+    const tilePts = pts([[0,-hh*1.9],[hw*1.9,0],[0,hh*1.9],[-hw*1.9,0]]);
+    const leftFacePts = pts([baseLeft, baseBottom, roofBottom, roofLeft]);
+    const rightFacePts = pts([baseRight, baseBottom, roofBottom, roofRight]);
+    const roofPts = pts([roofTop, roofRight, roofBottom, roofLeft]);
+
+    out += `<g class="node" data-idx="${i}" transform="translate(${sx.toFixed(1)},${sy.toFixed(1)})">
+      <ellipse class="halo" cx="0" cy="1" rx="${(hw*2.6).toFixed(1)}" ry="${(hh*2.6).toFixed(1)}" fill="${c}"></ellipse>
+      <polygon points="${tilePts}" fill="${tileColor}" opacity="0.5"></polygon>
+      <polygon points="${leftFacePts}" fill="${leftColor}"></polygon>
+      <polygon points="${rightFacePts}" fill="${rightColor}"></polygon>
+      <polygon class="core" points="${roofPts}" fill="${roofColor}" stroke="rgba(0,0,0,0.3)" stroke-width="0.5"></polygon>
+      <text class="node-label" x="${(hw+6).toFixed(1)}" y="${(-ext*0.45).toFixed(1)}">${escapeHtml(d.name)}</text>
     </g>`;
   });
   return out;
 }
 
-function escapeHtml(s){
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+// fixed resource/mining node icon: small crystal cluster on a stone tile
+function buildMiningNodes(){
+  let out = '';
+  const hw = 6.5, hh = 3.2, ext = 6;
+  const c1 = shade('#4a9d8f', 0.08);
+  const c2 = shade('#4a9d8f', -0.18);
+  const c3 = shade('#4a9d8f', 0.22);
+  MINING_NODES.forEach((d,i)=>{
+    const [sx,sy] = project(d.x,d.y);
+    const tilePts = pts([[0,-hh*1.9],[hw*1.9,0],[0,hh*1.9],[-hw*1.9,0]]);
+    out += `<g class="mnode" data-idx="${i}" transform="translate(${sx.toFixed(1)},${sy.toFixed(1)})">
+      <ellipse class="halo" cx="0" cy="1" rx="${(hw*2.4).toFixed(1)}" ry="${(hh*2.4).toFixed(1)}" fill="#4a9d8f"></ellipse>
+      <polygon points="${tilePts}" fill="#33465a" opacity="0.55"></polygon>
+      <polygon class="core" points="-3.5,2 -1,${(-ext).toFixed(1)} 2,2" fill="${c2}" stroke="rgba(0,0,0,0.3)" stroke-width="0.5"></polygon>
+      <polygon points="0,2 3,${(-ext+2.5).toFixed(1)} 6,2" fill="${c1}"></polygon>
+      <polygon points="-6,2 -3,${(-ext+3.5).toFixed(1)} 0,2" fill="${c3}"></polygon>
+      <text class="node-label" x="${(hw+5).toFixed(1)}" y="${(-ext*0.5).toFixed(1)}">${escapeHtml(d.name)}</text>
+    </g>`;
+  });
+  return out;
 }
 
-viewport.innerHTML = buildGrid() + buildNodes();
+// alliance banner icon: 1x1 footprint (half the tile size of the 2x2 town/mining
+// blocks above) — a thin pole with a small flag, planted on a small diamond tile.
+function buildBannerNodes(){
+  let out = '';
+  const hw = 3.2, hh = 1.6, ext = 10;
+  BANNER_NODES.forEach((d,i)=>{
+    const [sx,sy] = project(d.x,d.y);
+    const tilePts = pts([[0,-hh*1.9],[hw*1.9,0],[0,hh*1.9],[-hw*1.9,0]]);
+    const flagColor = d.garrisoned ? '#c9a961' : '#8fa8c9';
+    out += `<g class="bnode" data-idx="${i}" transform="translate(${sx.toFixed(1)},${sy.toFixed(1)})">
+      <ellipse class="halo" cx="0" cy="1" rx="${(hw*2.4).toFixed(1)}" ry="${(hh*2.4).toFixed(1)}" fill="${flagColor}"></ellipse>
+      <polygon points="${tilePts}" fill="#2a3550" opacity="0.5"></polygon>
+      <line x1="0" y1="1" x2="0" y2="${(-ext).toFixed(1)}" stroke="#c7cdda" stroke-width="1.2"></line>
+      <polygon class="core" points="0,${(-ext).toFixed(1)} 8,${(-ext+3.5).toFixed(1)} 0,${(-ext+7).toFixed(1)}" fill="${flagColor}" stroke="rgba(0,0,0,0.3)" stroke-width="0.4"></polygon>
+      <text class="node-label" x="${(hw+5).toFixed(1)}" y="${(-ext*0.5).toFixed(1)}">${escapeHtml(d.name)}</text>
+    </g>`;
+  });
+  return out;
+}
 
-// stats
-document.getElementById('stats').innerHTML = `
-  <span><b>${DATA.length}</b> kingdoms</span>
-  <span>avg <b>${fmt(Math.round(DATA.reduce((s,d)=>s+d.power,0)/DATA.length))}</b></span>
-  <span>top <b>${fmt(ranked[0].power)}</b> (${escapeHtml(ranked[0].name)})</span>
-`;
+const gridLayer = document.getElementById('gridLayer');
+const miningLayer = document.getElementById('miningLayer');
+const bannerLayer = document.getElementById('bannerLayer');
+const nodesLayer = document.getElementById('nodesLayer');
+gridLayer.innerHTML = buildGrid();
+miningLayer.innerHTML = buildMiningNodes();
+bannerLayer.innerHTML = buildBannerNodes();
+function renderNodes(){ nodesLayer.innerHTML = buildNodes(); }
+renderNodes();
+
+function updateStats(){
+  document.getElementById('stats').innerHTML = `
+    <span><b>${DATA.length}</b> kingdoms</span>
+    <span><b>${MINING_NODES.length}</b> mining nodes</span>
+    <span><b>${BANNER_NODES.length}</b> banners</span>
+    <span>avg <b>${fmt(Math.round(DATA.reduce((s,d)=>s+d.power,0)/DATA.length))}</b></span>
+    <span>top <b>${fmt(ranked[0].power)}</b> (${escapeHtml(ranked[0].name)})</span>
+  `;
+}
+updateStats();
 
 // pan / zoom state
 let scale = 1, tx = 0, ty = 0;
-let isDragging = false, lastX=0, lastY=0, dragged=false;
+let isDragging = false, lastX=0, lastY=0, dragged = false;
 
 function applyTransform(){
   viewport.setAttribute('transform', `translate(${tx},${ty}) scale(${scale})`);
@@ -586,7 +842,6 @@ mapWrap.addEventListener('wheel', (e)=>{
   const my = (e.clientY-rect.top)/rect.height*VB_H;
   const delta = e.deltaY < 0 ? 1.15 : 1/1.15;
   const newScale = Math.min(Math.max(scale*delta, 0.6), 12);
-  // keep cursor position fixed
   tx = mx - (mx-tx)*(newScale/scale);
   ty = my - (my-ty)*(newScale/scale);
   scale = newScale;
@@ -615,28 +870,46 @@ window.addEventListener('mouseup', ()=>{
 
 document.getElementById('zoomIn').onclick = ()=>{ scale = Math.min(scale*1.3,12); applyTransform(); };
 document.getElementById('zoomOut').onclick = ()=>{ scale = Math.max(scale/1.3,0.6); applyTransform(); };
-document.getElementById('zoomReset').onclick = ()=>{
-  scale=1; tx=0; ty=0; applyTransform();
-  clearHighlight();
-  document.getElementById('detailCard').classList.remove('show');
-  searchInput.value = '';
-  dropdown.classList.remove('open');
-  currentMatches = [];
-  activeIdx = -1;
-};
+document.getElementById('zoomReset').onclick = ()=>{ scale=1; tx=0; ty=0; applyTransform(); deselect(); };
 
-// node interactions
 viewport.addEventListener('mousemove', (e)=>{
   const g = e.target.closest('.node');
-  if(!g){ tooltip.style.display='none'; return; }
-  const d = DATA[g.dataset.idx];
-  tooltip.innerHTML = `<div class="t-name">${escapeHtml(d.name)}</div>
-    <div class="t-row"><span>X,Y</span><span>${d.x}, ${d.y}</span></div>
-    <div class="t-row"><span>Power</span><span>${fmt(d.power)}</span></div>
-    <div class="t-row"><span>Rank</span><span>#${rankOf(d)}</span></div>`;
-  tooltip.style.left = (e.clientX+16)+'px';
-  tooltip.style.top = (e.clientY+16)+'px';
-  tooltip.style.display = 'block';
+  if(g){
+    const d = DATA[g.dataset.idx];
+    tooltip.innerHTML = `<div class="t-name">${escapeHtml(d.name)}</div>
+      <div class="t-row"><span>X,Y</span><span>${d.x}, ${d.y}</span></div>
+      <div class="t-row"><span>Power</span><span>${fmt(d.power)}</span></div>
+      <div class="t-row"><span>Rank</span><span>#${rankOf(d)}</span></div>`;
+    tooltip.style.left = (e.clientX+16)+'px';
+    tooltip.style.top = (e.clientY+16)+'px';
+    tooltip.style.display = 'block';
+    return;
+  }
+  const m = e.target.closest('.mnode');
+  if(m){
+    const d = MINING_NODES[m.dataset.idx];
+    tooltip.innerHTML = `<div class="t-name">${escapeHtml(d.name)}</div>
+      <div class="t-row"><span>X,Y</span><span>${d.x}, ${d.y}</span></div>
+      <div class="t-row"><span>Resource</span><span>${escapeHtml(d.resource||'')}</span></div>
+      <div class="t-row"><span>Fixed</span><span>Yes</span></div>`;
+    tooltip.style.left = (e.clientX+16)+'px';
+    tooltip.style.top = (e.clientY+16)+'px';
+    tooltip.style.display = 'block';
+    return;
+  }
+  const b = e.target.closest('.bnode');
+  if(b){
+    const d = BANNER_NODES[b.dataset.idx];
+    tooltip.innerHTML = `<div class="t-name">${escapeHtml(d.name)}</div>
+      <div class="t-row"><span>X,Y</span><span>${d.x}, ${d.y}</span></div>
+      <div class="t-row"><span>Status</span><span>${d.garrisoned ? 'Garrisoned' : 'Not garrisoned'}</span></div>
+      <div class="t-row"><span>Fixed</span><span>Yes</span></div>`;
+    tooltip.style.left = (e.clientX+16)+'px';
+    tooltip.style.top = (e.clientY+16)+'px';
+    tooltip.style.display = 'block';
+    return;
+  }
+  tooltip.style.display = 'none';
 });
 viewport.addEventListener('mouseleave', ()=>{ tooltip.style.display='none'; });
 
@@ -646,49 +919,167 @@ function rankOf(d){
 
 viewport.addEventListener('click', (e)=>{
   if(dragged) return;
+  if(nodeDragMoved){ nodeDragMoved = false; return; }
   const g = e.target.closest('.node');
-  if(!g) return;
-  const d = DATA[g.dataset.idx];
-  showDetail(d);
-  focusNode(d);
+  if(g){
+    const d = DATA[g.dataset.idx];
+    showDetail(d);
+    focusNode(d);
+    return;
+  }
+  const m = e.target.closest('.mnode');
+  if(m){
+    const d = MINING_NODES[m.dataset.idx];
+    showMiningDetail(d);
+    focusMining(d);
+    return;
+  }
+  const b = e.target.closest('.bnode');
+  if(b){
+    const d = BANNER_NODES[b.dataset.idx];
+    showBannerDetail(d);
+    focusBanner(d);
+    return;
+  }
+  deselect();
 });
 
+let selectedNode = null;
+let selectedIsMining = false;
+let selectedIsBanner = false;
 function showDetail(d){
+  selectedNode = d;
+  selectedIsMining = false;
+  selectedIsBanner = false;
   document.getElementById('detailCard').classList.add('show');
   document.getElementById('dName').textContent = d.name;
   document.getElementById('dCoord').textContent = `X:${d.x}  Y:${d.y}`;
+  document.getElementById('dPowerLabel').textContent = 'Power';
   document.getElementById('dPower').textContent = fmt(d.power);
+  document.getElementById('dRankRow').style.display = 'flex';
   document.getElementById('dRank').textContent = `#${rankOf(d)} of ${DATA.length}`;
+  document.getElementById('powerEdit').style.display = 'flex';
+  document.getElementById('powerInput').value = d.power;
 }
 
-function focusNode(d){
-  const [sx,sy] = worldToScreen(d.x,d.y);
+function showMiningDetail(d){
+  selectedNode = d;
+  selectedIsMining = true;
+  selectedIsBanner = false;
+  document.getElementById('detailCard').classList.add('show');
+  document.getElementById('dName').textContent = d.name;
+  document.getElementById('dCoord').textContent = `X:${d.x}  Y:${d.y}`;
+  document.getElementById('dPowerLabel').textContent = 'Resource';
+  document.getElementById('dPower').textContent = d.resource || '—';
+  document.getElementById('dRankRow').style.display = 'none';
+  document.getElementById('powerEdit').style.display = 'none';
+}
+
+function showBannerDetail(d){
+  selectedNode = d;
+  selectedIsMining = false;
+  selectedIsBanner = true;
+  document.getElementById('detailCard').classList.add('show');
+  document.getElementById('dName').textContent = d.name;
+  document.getElementById('dCoord').textContent = `X:${d.x}  Y:${d.y}`;
+  document.getElementById('dPowerLabel').textContent = 'Status';
+  document.getElementById('dPower').textContent = d.garrisoned ? 'Garrisoned' : 'Not garrisoned';
+  document.getElementById('dRankRow').style.display = 'none';
+  document.getElementById('powerEdit').style.display = 'none';
+}
+
+function applyHighlight(d){
+  const idx = DATA.indexOf(d);
+  document.querySelectorAll('.node').forEach(n=>{
+    n.classList.remove('highlight','dimmed');
+    if(parseInt(n.dataset.idx)===idx) n.classList.add('highlight');
+    else n.classList.add('dimmed');
+  });
+  document.querySelectorAll('.mnode').forEach(n=>n.classList.add('dimmed'));
+  document.querySelectorAll('.bnode').forEach(n=>n.classList.add('dimmed'));
+}
+
+function applyMiningHighlight(d){
+  const idx = MINING_NODES.indexOf(d);
+  document.querySelectorAll('.mnode').forEach(n=>{
+    n.classList.remove('highlight','dimmed');
+    if(parseInt(n.dataset.idx)===idx) n.classList.add('highlight');
+    else n.classList.add('dimmed');
+  });
+  document.querySelectorAll('.node').forEach(n=>n.classList.add('dimmed'));
+  document.querySelectorAll('.bnode').forEach(n=>n.classList.add('dimmed'));
+}
+
+function applyBannerHighlight(d){
+  const idx = BANNER_NODES.indexOf(d);
+  document.querySelectorAll('.bnode').forEach(n=>{
+    n.classList.remove('highlight','dimmed');
+    if(parseInt(n.dataset.idx)===idx) n.classList.add('highlight');
+    else n.classList.add('dimmed');
+  });
+  document.querySelectorAll('.node').forEach(n=>n.classList.add('dimmed'));
+  document.querySelectorAll('.mnode').forEach(n=>n.classList.add('dimmed'));
+}
+
+function focusOn(x,y){
+  const [sx,sy] = project(x,y);
   scale = 4;
   tx = VB_W/2 - sx*scale;
   ty = VB_H/2 - sy*scale;
   applyTransform();
-  document.querySelectorAll('.node').forEach(n=>n.classList.remove('highlight','dimmed'));
-  const idx = DATA.indexOf(d);
-  document.querySelectorAll('.node').forEach(n=>{
-    if(parseInt(n.dataset.idx)===idx) n.classList.add('highlight');
-    else n.classList.add('dimmed');
-  });
+}
+
+function focusNode(d){
+  focusOn(d.x,d.y);
+  applyHighlight(d);
+}
+
+function focusMining(d){
+  focusOn(d.x,d.y);
+  applyMiningHighlight(d);
+}
+
+function focusBanner(d){
+  focusOn(d.x,d.y);
+  applyBannerHighlight(d);
 }
 
 function clearHighlight(){
   document.querySelectorAll('.node').forEach(n=>n.classList.remove('highlight','dimmed'));
+  document.querySelectorAll('.mnode').forEach(n=>n.classList.remove('highlight','dimmed'));
+  document.querySelectorAll('.bnode').forEach(n=>n.classList.remove('highlight','dimmed'));
 }
+
+function deselect(){
+  clearHighlight();
+  selectedNode = null;
+  selectedIsMining = false;
+  selectedIsBanner = false;
+  document.getElementById('detailCard').classList.remove('show');
+  searchInput.value = '';
+  dropdown.classList.remove('open');
+}
+document.getElementById('dClose').addEventListener('click', deselect);
+
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'Escape' && !dropdown.classList.contains('open')){
+    deselect();
+  }
+});
 
 // search
 const searchInput = document.getElementById('search');
 const dropdown = document.getElementById('dropdown');
 let activeIdx = -1;
 let currentMatches = [];
+function sortMatches(list){
+  return [...list].sort((a,b)=>b.power-a.power).slice(0,20);
+}
 
 searchInput.addEventListener('input', ()=>{
   const q = searchInput.value.trim().toLowerCase();
   if(!q){ dropdown.classList.remove('open'); clearHighlight(); return; }
-  currentMatches = DATA.filter(d=>d.name.toLowerCase().includes(q)).sort((a,b)=>b.power-a.power).slice(0,20);
+  currentMatches = sortMatches(DATA.filter(d=>d.name.toLowerCase().includes(q)));
   activeIdx = -1;
   renderDropdown();
 });
@@ -734,7 +1125,113 @@ document.addEventListener('click', (e)=>{
 
 applyTransform();
 
-} // end initApp
+// ---- Edit mode: drag markers to reposition, then copy updated data ----
+// Inverse of rawProject, derived numerically so it stays correct even if the
+// projection is mirrored/rotated later.
+const _o = rawProject(0,0), _ex = rawProject(1,0), _ey = rawProject(0,1);
+const mA = _ex.rx-_o.rx, mC = _ex.ry-_o.ry;
+const mB = _ey.rx-_o.rx, mD = _ey.ry-_o.ry;
+const mDet = mA*mD - mB*mC;
+function screenDeltaToWorldDelta(drx, dry){
+  return [ (mD*drx - mB*dry)/mDet, (mA*dry - mC*drx)/mDet ];
+}
+
+let editMode = false;
+let nodeDragging = false, nodeDragIdx = -1, nodeDragMoved = false;
+let ndLastX = 0, ndLastY = 0;
+let dragRawX = 0, dragRawY = 0;
+
+const editToggle = document.getElementById('editToggle');
+const copyBtn = document.getElementById('copyPositions');
+
+editToggle.addEventListener('click', ()=>{
+  editMode = !editMode;
+  editToggle.textContent = editMode ? 'Done editing' : 'Edit positions';
+  editToggle.classList.toggle('active', editMode);
+  mapWrap.classList.toggle('edit-mode', editMode);
+  deselect();
+});
+
+viewport.addEventListener('mousedown', (e)=>{
+  if(!editMode) return;
+  const g = e.target.closest('.node');
+  if(!g) return;
+  e.stopPropagation();
+  nodeDragging = true; nodeDragMoved = false;
+  nodeDragIdx = parseInt(g.dataset.idx);
+  const d = DATA[nodeDragIdx];
+  dragRawX = d.x; dragRawY = d.y;
+  ndLastX = e.clientX; ndLastY = e.clientY;
+});
+
+window.addEventListener('mousemove', (e)=>{
+  if(!nodeDragging) return;
+  const dxPx = e.clientX-ndLastX, dyPx = e.clientY-ndLastY;
+  if(Math.abs(dxPx)>1 || Math.abs(dyPx)>1) nodeDragMoved = true;
+  const rect = mapWrap.getBoundingClientRect();
+  const dLocalX = (dxPx*(VB_W/rect.width))/scale;
+  const dLocalY = (dyPx*(VB_H/rect.height))/scale;
+  const drx = dLocalX/projScale, dry = dLocalY/projScale;
+  const [dx,dy] = screenDeltaToWorldDelta(drx,dry);
+  dragRawX += dx; dragRawY += dy;
+  const d = DATA[nodeDragIdx];
+  d.x = Math.round(dragRawX);
+  d.y = Math.round(dragRawY);
+  ndLastX = e.clientX; ndLastY = e.clientY;
+  renderNodes();
+  if(selectedNode === d) applyHighlight(d);
+  tooltip.innerHTML = `<div class="t-name">${escapeHtml(d.name)}</div>
+    <div class="t-row"><span>X,Y</span><span>${d.x}, ${d.y}</span></div>`;
+  tooltip.style.left = (e.clientX+16)+'px';
+  tooltip.style.top = (e.clientY+16)+'px';
+  tooltip.style.display = 'block';
+});
+
+window.addEventListener('mouseup', ()=>{
+  if(nodeDragging){
+    nodeDragging = false;
+    tooltip.style.display = 'none';
+    const d = DATA[nodeDragIdx];
+    if(selectedNode === d) showDetail(d);
+  }
+});
+
+document.getElementById('powerSave').addEventListener('click', ()=>{
+  if(!selectedNode || selectedIsMining || selectedIsBanner) return;
+  const val = parseInt(document.getElementById('powerInput').value, 10);
+  if(!Number.isFinite(val) || val <= 0) return;
+  selectedNode.power = val;
+  recomputeRanks();
+  renderNodes();
+  applyHighlight(selectedNode);
+  showDetail(selectedNode);
+  updateStats();
+});
+
+copyBtn.addEventListener('click', ()=>{
+  const lines = DATA.map(d=>
+    `  {"name": ${JSON.stringify(d.name)}, "x": ${Math.round(d.x)}, "y": ${Math.round(d.y)}, "power": ${d.power}}`
+  );
+  const text = '[\n' + lines.join(',\n') + '\n]';
+  const done = ()=>{
+    const orig = 'Copy data';
+    copyBtn.textContent = 'Copied!';
+    setTimeout(()=>{ copyBtn.textContent = orig; }, 1500);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(()=>{
+      const ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+      done();
+    });
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    done();
+  }
+});
 </script>
 </body>
 </html>
