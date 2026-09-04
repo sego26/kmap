@@ -455,10 +455,10 @@
     </div>
     <aside>
       <h2>Power Tier</h2>
-      <div class="legend-row"><div class="swatch" style="background:#4a9d8f"></div> Under 40M</div>
-      <div class="legend-row"><div class="swatch" style="background:#5b7ba6"></div> 40M – 70M</div>
-      <div class="legend-row"><div class="swatch" style="background:#c9a961"></div> 70M – 110M</div>
-      <div class="legend-row"><div class="swatch" style="background:#b3432f"></div> 110M+</div>
+      <div class="legend-row"><div class="swatch" style="background:#4a9d8f"></div> Under 80M</div>
+      <div class="legend-row"><div class="swatch" style="background:#5b7ba6"></div> 80M – 120M</div>
+      <div class="legend-row"><div class="swatch" style="background:#c9a961"></div> 120M – 200M</div>
+      <div class="legend-row"><div class="swatch" style="background:#b3432f"></div> 200M+</div>
       <div class="legend-row"><div class="swatch" style="background:#8b93a8"></div> Mining node (2×2, fixed)</div>
       <div class="legend-row"><div class="swatch" style="background:#8fa8c9"></div> Banner (1×1, fixed)</div>
       <div class="controls">
@@ -683,7 +683,7 @@ const worldX0 = minX-wPadX, worldX1 = maxX+wPadX;
 const worldY0 = minY-wPadY, worldY1 = maxY+wPadY;
 
 // Power tier thresholds and their colors — edit these to retune the legend/coloring.
-const TIER_THRESHOLDS = [40000000, 70000000, 110000000];
+const TIER_THRESHOLDS = [80000000, 120000000, 200000000];
 const TIER_COLORS = ['#4a9d8f', '#5b7ba6', '#c9a961', '#b3432f'];
 
 function powerColor(p){
