@@ -455,11 +455,11 @@
     </div>
     <aside>
       <h2>Power Tier</h2>
-      <div class="legend-row"><div class="swatch" style="background:#4a9d8f"></div> Under 80M</div>
-      <div class="legend-row"><div class="swatch" style="background:#5b7ba6"></div> 80M – 120M</div>
-      <div class="legend-row"><div class="swatch" style="background:#c9a961"></div> 120M – 200M</div>
-      <div class="legend-row"><div class="swatch" style="background:#b3432f"></div> 200M+</div>
-      <div class="legend-row"><div class="swatch" style="background:#7fcdbd"></div> Mining node (2×2, fixed)</div>
+      <div class="legend-row"><div class="swatch" style="background:#4a9d8f"></div> Under 40M</div>
+      <div class="legend-row"><div class="swatch" style="background:#5b7ba6"></div> 40M – 70M</div>
+      <div class="legend-row"><div class="swatch" style="background:#c9a961"></div> 70M – 110M</div>
+      <div class="legend-row"><div class="swatch" style="background:#b3432f"></div> 110M+</div>
+      <div class="legend-row"><div class="swatch" style="background:#8b93a8"></div> Mining node (2×2, fixed)</div>
       <div class="legend-row"><div class="swatch" style="background:#8fa8c9"></div> Banner (1×1, fixed)</div>
       <div class="controls">
         <b>Scroll</b> to zoom<br>
@@ -683,7 +683,7 @@ const worldX0 = minX-wPadX, worldX1 = maxX+wPadX;
 const worldY0 = minY-wPadY, worldY1 = maxY+wPadY;
 
 // Power tier thresholds and their colors — edit these to retune the legend/coloring.
-const TIER_THRESHOLDS = [80000000, 120000000, 200000000];
+const TIER_THRESHOLDS = [40000000, 70000000, 110000000];
 const TIER_COLORS = ['#4a9d8f', '#5b7ba6', '#c9a961', '#b3432f'];
 
 function powerColor(p){
@@ -767,19 +767,22 @@ function buildNodes(){
 // fixed resource/mining node icon: small crystal cluster on a stone tile
 function buildMiningNodes(){
   let out = '';
-  const hw = 6.5, hh = 3.2, ext = 6;
-  const c1 = shade('#4a9d8f', 0.08);
-  const c2 = shade('#4a9d8f', -0.18);
-  const c3 = shade('#4a9d8f', 0.22);
+  const hw = 9.4, hh = 4.6, ext = 11;
+  const stone = '#8b93a8';
+  const leftColor = shade(stone, -0.24);
+  const rightColor = shade(stone, 0.08);
+  const tileColor = '#33465a';
   MINING_NODES.forEach((d,i)=>{
     const [sx,sy] = project(d.x,d.y);
     const tilePts = pts([[0,-hh*1.9],[hw*1.9,0],[0,hh*1.9],[-hw*1.9,0]]);
+    const baseLeft=[-hw,0], baseRight=[hw,0], baseBottom=[0,hh], apex=[0,-ext];
+    const leftFace = pts([baseLeft, baseBottom, apex]);
+    const rightFace = pts([baseRight, baseBottom, apex]);
     out += `<g class="mnode" data-idx="${i}" transform="translate(${sx.toFixed(1)},${sy.toFixed(1)})">
-      <ellipse class="halo" cx="0" cy="1" rx="${(hw*2.4).toFixed(1)}" ry="${(hh*2.4).toFixed(1)}" fill="#4a9d8f"></ellipse>
-      <polygon points="${tilePts}" fill="#33465a" opacity="0.55"></polygon>
-      <polygon class="core" points="-3.5,2 -1,${(-ext).toFixed(1)} 2,2" fill="${c2}" stroke="rgba(0,0,0,0.3)" stroke-width="0.5"></polygon>
-      <polygon points="0,2 3,${(-ext+2.5).toFixed(1)} 6,2" fill="${c1}"></polygon>
-      <polygon points="-6,2 -3,${(-ext+3.5).toFixed(1)} 0,2" fill="${c3}"></polygon>
+      <ellipse class="halo" cx="0" cy="1" rx="${(hw*2.4).toFixed(1)}" ry="${(hh*2.4).toFixed(1)}" fill="${stone}"></ellipse>
+      <polygon points="${tilePts}" fill="${tileColor}" opacity="0.55"></polygon>
+      <polygon points="${leftFace}" fill="${leftColor}" stroke="rgba(0,0,0,0.35)" stroke-width="0.5"></polygon>
+      <polygon class="core" points="${rightFace}" fill="${rightColor}" stroke="rgba(0,0,0,0.35)" stroke-width="0.5"></polygon>
       <text class="node-label" x="${(hw+5).toFixed(1)}" y="${(-ext*0.5).toFixed(1)}">${escapeHtml(d.name)}</text>
     </g>`;
   });
