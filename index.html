@@ -134,6 +134,7 @@
       var(--bg);
   }
   #mapWrap.dragging{ cursor:grabbing; }
+  #mapWrap.pick-mode, #mapWrap.pick-mode *{ cursor:crosshair !important; }
   svg{ width:100%; height:100%; display:block; }
   .grid-line{ stroke:var(--grid); stroke-width:1; }
   .grid-line.major{ stroke:var(--grid-major); }
@@ -274,7 +275,7 @@
     padding-top:12px;
     border-top:1px solid var(--grid-major);
   }
-  .power-edit input{
+  .power-edit input, .add-form input{
     flex:1;
     min-width:0;
     background:var(--bg);
@@ -286,8 +287,8 @@
     font-size:12px;
     outline:none;
   }
-  .power-edit input:focus{ border-color:var(--gold); }
-  .power-edit button{
+  .power-edit input:focus, .add-form input:focus{ border-color:var(--gold); }
+  .power-edit button, .btn-gold{
     background:var(--gold);
     border:none;
     color:var(--bg);
@@ -299,7 +300,55 @@
     cursor:pointer;
     white-space:nowrap;
   }
-  .power-edit button:hover{ opacity:0.9; }
+  .power-edit button:hover, .btn-gold:hover{ opacity:0.9; }
+  .btn-ghost{
+    background:transparent;
+    border:1px solid var(--grid-major);
+    color:var(--text-dim);
+    padding:7px 10px;
+    border-radius:5px;
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size:11px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .btn-ghost:hover{ border-color:var(--gold); color:var(--gold); }
+  .btn-ghost.active{ border-color:var(--gold); color:var(--gold); background:rgba(201,169,97,0.12); }
+  .btn-danger{
+    width:100%;
+    margin-top:8px;
+    background:transparent;
+    border:1px solid rgba(179,67,47,0.6);
+    color:#d9735f;
+    padding:7px 10px;
+    border-radius:5px;
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size:11px;
+    cursor:pointer;
+  }
+  .btn-danger:hover{ background:rgba(179,67,47,0.12); }
+  .btn-danger.armed{ background:var(--crimson); border-color:var(--crimson); color:#fff; }
+
+  .add-section{
+    margin-top:24px;
+    padding-top:18px;
+    border-top:1px solid var(--grid-major);
+  }
+  .add-form{ display:flex; flex-direction:column; gap:7px; }
+  .add-row{ display:flex; gap:6px; }
+  .add-row input{ width:0; }
+  .form-msg{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10.5px;
+    min-height:14px;
+    line-height:1.4;
+  }
+  .form-msg.err{ color:#d9735f; }
+  .form-msg.ok{ color:var(--teal); }
+  .form-msg.info{ color:var(--text-dim); }
+
   #zoomCtl{
     position:absolute;
     bottom:20px;
@@ -479,6 +528,22 @@
           <input id="powerInput" type="number" min="1" step="1">
           <button id="powerSave">Update power</button>
         </div>
+        <button id="removeCity" class="btn-danger">Remove city</button>
+      </div>
+
+      <div class="add-section">
+        <h2>Add City</h2>
+        <div class="add-form">
+          <input id="addName" type="text" placeholder="Ruler / city name" autocomplete="off" maxlength="40">
+          <div class="add-row">
+            <input id="addX" type="number" placeholder="X" step="1">
+            <input id="addY" type="number" placeholder="Y" step="1">
+            <button id="pickBtn" class="btn-ghost" title="Click a spot on the map to fill X and Y">Pick</button>
+          </div>
+          <input id="addPower" type="number" placeholder="Power (e.g. 95000000)" min="1" step="1">
+          <button id="addBtn" class="btn-gold">Add city</button>
+          <div id="addMsg" class="form-msg"></div>
+        </div>
       </div>
     </aside>
   </div>
@@ -536,7 +601,7 @@ const DATA = [
   {"name": "kolongJembatan", "x": 661, "y": 431, "power": 135440936},
   {"name": "mixxiw", "x": 661, "y": 433, "power": 135249255},
   {"name": "Mafia", "x": 657, "y": 415, "power": 66691762},
-  {"name": "سيد الظلال", "x": 662, "y": 439, "power": 82833398},
+  {"name": "سيد الظلال", "x": 662, "y": 439, "power": 82833398},
   {"name": "Tomifaso", "x": 667, "y": 435, "power": 83686295},
   {"name": "sago", "x": 665, "y": 435, "power": 21033629},
   {"name": "Marcus008", "x": 663, "y": 435, "power": 115077183},
@@ -565,7 +630,7 @@ const DATA = [
   {"name": "isla", "x": 649, "y": 438, "power": 53211858},
   {"name": "Barbatos", "x": 647, "y": 438, "power": 34837368},
   {"name": "BAY OSMANLI", "x": 648, "y": 436, "power": 76871758},
-  {"name": "ياسر ابو عمر", "x": 646, "y": 436, "power": 63720143},
+  {"name": "ياسر ابو عمر", "x": 646, "y": 436, "power": 63720143},
   {"name": "mbd", "x": 645, "y": 434, "power": 103347948},
   {"name": "Citronauts", "x": 647, "y": 430, "power": 103284209},
   {"name": "UCF Knights", "x": 647, "y": 428, "power": 114052667},
@@ -581,7 +646,7 @@ const DATA = [
   {"name": "seif", "x": 642, "y": 426, "power": 43920198},
   {"name": "NWCowboy", "x": 641, "y": 424, "power": 75753742},
   {"name": "Terdfergusonn", "x": 639, "y": 423, "power": 98645468},
-  {"name": "اسلام حسين §§", "x": 640, "y": 426, "power": 121988553},
+  {"name": "اسلام حسين §§", "x": 640, "y": 426, "power": 121988553},
   {"name": "Symmy", "x": 641, "y": 428, "power": 111364057},
   {"name": "Lord Plop", "x": 639, "y": 428, "power": 165091832},
   {"name": "majonespzn", "x": 638, "y": 425, "power": 78703173},
@@ -589,13 +654,13 @@ const DATA = [
   {"name": "Omar DZ", "x": 637, "y": 428, "power": 92444372},
   {"name": "Muskie", "x": 639, "y": 430, "power": 252627200},
   {"name": "Cooluck", "x": 639, "y": 432, "power": 200795283},
-  {"name": "اسلام حسين2", "x": 651, "y": 415, "power": 68884500},
+  {"name": "اسلام حسين2", "x": 651, "y": 415, "power": 68884500},
   {"name": "Queen Plop", "x": 637, "y": 430, "power": 54459866},
   {"name": "Energizer", "x": 635, "y": 430, "power": 102787080},
   {"name": "woow", "x": 635, "y": 432, "power": 76435389},
   {"name": "Evahnzelle", "x": 641, "y": 434, "power": 126537219},
   {"name": "VPooter", "x": 639, "y": 436, "power": 85243939},
-  {"name": "le P4", "x": 639, "y": 434, "power": 111045555},  
+  {"name": "le P4", "x": 639, "y": 434, "power": 111045555},
   {"name": "Metallica", "x": 639, "y": 438, "power": 39561584},
   {"name": "elSamty", "x": 645, "y": 428, "power": 77101875},
   {"name": "moumi", "x": 653, "y": 427, "power": 149261228},
@@ -608,12 +673,12 @@ const DATA = [
 const MINING_NODES = [
   {"name": "Mining Node", "x": 651, "y": 435, "resource": "Stone"},
   {"name": "Mining Node", "x": 658, "y": 440, "resource": "Wood"},
-  {"name": "Mining Node", "x": 664, "y": 439, "resource": "Iron"},  
+  {"name": "Mining Node", "x": 664, "y": 439, "resource": "Iron"},
   {"name": "Mining Node", "x": 655, "y": 424, "resource": "Bread"},
   {"name": "Mining Node", "x": 649, "y": 425, "resource": "Wood"},
-  {"name": "Mining Node", "x": 644, "y": 438, "resource": "Stone"},  
-  {"name": "Mining Node", "x": 651, "y": 435, "resource": "Stone"},  
-  {"name": "Mining Node", "x": 645, "y": 418, "resource": "Stone"},  
+  {"name": "Mining Node", "x": 644, "y": 438, "resource": "Stone"},
+  {"name": "Mining Node", "x": 651, "y": 435, "resource": "Stone"},
+  {"name": "Mining Node", "x": 645, "y": 418, "resource": "Stone"},
   {"name": "Mining Node", "x": 663, "y": 424, "resource": "Wood"}
 ];
 
@@ -622,15 +687,15 @@ const MINING_NODES = [
 const BANNER_NODES = [
   {"name": "Alliance Banner", "x": 663, "y": 441, "garrisoned": false},
   {"name": "Alliance Banner", "x": 667, "y": 427, "garrisoned": false},
-  {"name": "Alliance Banner", "x": 660, "y": 424, "garrisoned": false},  
+  {"name": "Alliance Banner", "x": 660, "y": 424, "garrisoned": false},
   {"name": "Alliance Banner", "x": 656, "y": 426, "garrisoned": false},
-  {"name": "Alliance Banner", "x": 655, "y": 426, "garrisoned": false},  
-  {"name": "Alliance Banner", "x": 650, "y": 427, "garrisoned": false},  
-  {"name": "Alliance Banner", "x": 648, "y": 423, "garrisoned": false},  
-  {"name": "Alliance Banner", "x": 642, "y": 423, "garrisoned": false},  
-  {"name": "Alliance Banner", "x": 637, "y": 427, "garrisoned": false},  
-  {"name": "Alliance Banner", "x": 634, "y": 433, "garrisoned": false},  
-  {"name": "Alliance Banner", "x": 644, "y": 440, "garrisoned": false}  
+  {"name": "Alliance Banner", "x": 655, "y": 426, "garrisoned": false},
+  {"name": "Alliance Banner", "x": 650, "y": 427, "garrisoned": false},
+  {"name": "Alliance Banner", "x": 648, "y": 423, "garrisoned": false},
+  {"name": "Alliance Banner", "x": 642, "y": 423, "garrisoned": false},
+  {"name": "Alliance Banner", "x": 637, "y": 427, "garrisoned": false},
+  {"name": "Alliance Banner", "x": 634, "y": 433, "garrisoned": false},
+  {"name": "Alliance Banner", "x": 644, "y": 440, "garrisoned": false}
 ];
 
 // sort for ranking
@@ -823,12 +888,14 @@ function renderNodes(){ nodesLayer.innerHTML = buildNodes(); }
 renderNodes();
 
 function updateStats(){
+  const avg = DATA.length ? Math.round(DATA.reduce((s,d)=>s+d.power,0)/DATA.length) : 0;
+  const top = ranked[0];
   document.getElementById('stats').innerHTML = `
     <span><b>${DATA.length}</b> kingdoms</span>
     <span><b>${MINING_NODES.length}</b> mining nodes</span>
     <span><b>${BANNER_NODES.length}</b> banners</span>
-    <span>avg <b>${fmt(Math.round(DATA.reduce((s,d)=>s+d.power,0)/DATA.length))}</b></span>
-    <span>top <b>${fmt(ranked[0].power)}</b> (${escapeHtml(ranked[0].name)})</span>
+    <span>avg <b>${fmt(avg)}</b></span>
+    ${top ? `<span>top <b>${fmt(top.power)}</b> (${escapeHtml(top.name)})</span>` : ''}
   `;
 }
 updateStats();
@@ -966,6 +1033,8 @@ function showDetail(d){
   document.getElementById('dRank').textContent = `#${rankOf(d)} of ${DATA.length}`;
   document.getElementById('powerEdit').style.display = 'flex';
   document.getElementById('powerInput').value = d.power;
+  removeBtn.style.display = 'block';
+  disarmRemove();
 }
 
 function showMiningDetail(d){
@@ -979,6 +1048,7 @@ function showMiningDetail(d){
   document.getElementById('dPower').textContent = d.resource || '—';
   document.getElementById('dRankRow').style.display = 'none';
   document.getElementById('powerEdit').style.display = 'none';
+  removeBtn.style.display = 'none';
 }
 
 function showBannerDetail(d){
@@ -992,6 +1062,7 @@ function showBannerDetail(d){
   document.getElementById('dPower').textContent = d.garrisoned ? 'Garrisoned' : 'Not garrisoned';
   document.getElementById('dRankRow').style.display = 'none';
   document.getElementById('powerEdit').style.display = 'none';
+  removeBtn.style.display = 'none';
 }
 
 function applyHighlight(d){
@@ -1064,12 +1135,14 @@ function deselect(){
   document.getElementById('detailCard').classList.remove('show');
   searchInput.value = '';
   dropdown.classList.remove('open');
+  disarmRemove();
 }
 document.getElementById('dClose').addEventListener('click', deselect);
 
 document.addEventListener('keydown', (e)=>{
-  if(e.key === 'Escape' && !dropdown.classList.contains('open')){
-    deselect();
+  if(e.key === 'Escape'){
+    if(pickMode){ setPickMode(false); return; }
+    if(!dropdown.classList.contains('open')) deselect();
   }
 });
 
@@ -1159,7 +1232,7 @@ editToggle.addEventListener('click', ()=>{
 });
 
 viewport.addEventListener('mousedown', (e)=>{
-  if(!editMode) return;
+  if(!editMode || pickMode) return;
   const g = e.target.closest('.node');
   if(!g) return;
   e.stopPropagation();
@@ -1212,6 +1285,130 @@ document.getElementById('powerSave').addEventListener('click', ()=>{
   applyHighlight(selectedNode);
   showDetail(selectedNode);
   updateStats();
+});
+
+// ---- Add / remove cities ----
+const removeBtn = document.getElementById('removeCity');
+const addName = document.getElementById('addName');
+const addX = document.getElementById('addX');
+const addY = document.getElementById('addY');
+const addPower = document.getElementById('addPower');
+const addBtn = document.getElementById('addBtn');
+const pickBtn = document.getElementById('pickBtn');
+const addMsg = document.getElementById('addMsg');
+
+function setMsg(text, kind){
+  addMsg.textContent = text;
+  addMsg.className = 'form-msg' + (kind ? ' '+kind : '');
+}
+
+// Convert a mouse position to world (game) coordinates, accounting for
+// the current pan/zoom and the SVG's letterboxing.
+function clientToWorld(clientX, clientY){
+  const ctm = viewport.getScreenCTM();
+  if(!ctm) return null;
+  const p = svg.createSVGPoint();
+  p.x = clientX; p.y = clientY;
+  const local = p.matrixTransform(ctm.inverse());
+  const rx = (local.x - offX)/projScale + rMinX;
+  const ry = (local.y - offY)/projScale + rMinY;
+  const [wx, wy] = screenDeltaToWorldDelta(rx - _o.rx, ry - _o.ry);
+  return [Math.round(wx), Math.round(wy)];
+}
+
+let pickMode = false;
+function setPickMode(on){
+  pickMode = on;
+  pickBtn.classList.toggle('active', on);
+  pickBtn.textContent = on ? 'Cancel' : 'Pick';
+  mapWrap.classList.toggle('pick-mode', on);
+  if(on) setMsg('Click a spot on the map…', 'info');
+  else { if(addMsg.classList.contains('info')) setMsg(''); tooltip.style.display = 'none'; }
+}
+pickBtn.addEventListener('click', ()=> setPickMode(!pickMode));
+
+mapWrap.addEventListener('mousemove', (e)=>{
+  if(!pickMode || isDragging) return;
+  const w = clientToWorld(e.clientX, e.clientY);
+  if(!w) return;
+  const taken = DATA.find(d=>d.x===w[0] && d.y===w[1]);
+  tooltip.innerHTML = `<div class="t-name">New city here</div>
+    <div class="t-row"><span>X,Y</span><span>${w[0]}, ${w[1]}</span></div>
+    ${taken ? `<div class="t-row"><span>Taken by</span><span>${escapeHtml(taken.name)}</span></div>` : ''}`;
+  tooltip.style.left = (e.clientX+16)+'px';
+  tooltip.style.top = (e.clientY+16)+'px';
+  tooltip.style.display = 'block';
+});
+
+// Capture phase so a pick click doesn't also select/deselect markers.
+mapWrap.addEventListener('click', (e)=>{
+  if(!pickMode) return;
+  if(e.target.closest('#zoomCtl')) return;
+  e.stopPropagation();
+  if(dragged) return;
+  const w = clientToWorld(e.clientX, e.clientY);
+  if(!w) return;
+  addX.value = w[0];
+  addY.value = w[1];
+  setPickMode(false);
+  setMsg(`Picked X:${w[0]} Y:${w[1]}`, 'info');
+  (addName.value.trim() ? addPower : addName).focus();
+}, true);
+
+function addCity(){
+  const name = addName.value.trim();
+  const x = parseInt(addX.value, 10);
+  const y = parseInt(addY.value, 10);
+  const power = parseInt(addPower.value, 10);
+  if(!name) return setMsg('Enter a name.', 'err');
+  if(!Number.isFinite(x) || !Number.isFinite(y)) return setMsg('Enter X and Y, or use Pick.', 'err');
+  if(!Number.isFinite(power) || power <= 0) return setMsg('Enter a power above 0.', 'err');
+  const clash = DATA.find(d=>d.x===x && d.y===y);
+  if(clash) return setMsg(`${clash.name} is already at ${x}, ${y}.`, 'err');
+
+  const d = {name, x, y, power};
+  DATA.push(d);
+  ranked.push(d);
+  recomputeRanks();
+  renderNodes();
+  updateStats();
+  addName.value = ''; addX.value = ''; addY.value = ''; addPower.value = '';
+  setMsg(`Added ${name}.`, 'ok');
+  showDetail(d);
+  focusNode(d);
+}
+addBtn.addEventListener('click', addCity);
+[addName, addX, addY, addPower].forEach(inp=>{
+  inp.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); addCity(); } });
+});
+
+// Two-step remove: first click arms, second click (within 3s) deletes.
+let removeArmed = false, removeTimer = null;
+function disarmRemove(){
+  removeArmed = false;
+  clearTimeout(removeTimer);
+  removeBtn.classList.remove('armed');
+  removeBtn.textContent = 'Remove city';
+}
+removeBtn.addEventListener('click', ()=>{
+  if(!selectedNode || selectedIsMining || selectedIsBanner) return;
+  if(!removeArmed){
+    removeArmed = true;
+    removeBtn.classList.add('armed');
+    removeBtn.textContent = 'Click again to remove';
+    removeTimer = setTimeout(disarmRemove, 3000);
+    return;
+  }
+  const d = selectedNode;
+  const i = DATA.indexOf(d);
+  if(i >= 0) DATA.splice(i, 1);
+  const r = ranked.indexOf(d);
+  if(r >= 0) ranked.splice(r, 1);
+  recomputeRanks();
+  renderNodes();
+  updateStats();
+  deselect();
+  setMsg(`Removed ${d.name}.`, 'ok');
 });
 
 copyBtn.addEventListener('click', ()=>{
